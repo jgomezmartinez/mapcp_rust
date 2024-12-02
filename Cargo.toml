@@ -1,0 +1,12 @@
+[workspace] 
+members = ["schemas", "selling_signature_Secp256k1", "selling_signature_NistP256", "selling_signature_service_Secp256k1", "selling_signature_service_NistP256", "selling_signature_elgamal_Secp256k1", "selling_signature_elgamal_NistP256"]
+resolver = "2"
+
+# [package]
+# name = "imdea_crypto"
+# version = "0.1.0"
+# edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# [dependencies]

@@ -1,0 +1,22 @@
+[package]
+name = "schemas"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+subtle = "2.5.0"
+getrandom = "0.2.12"
+rand_core = {version = "0.6.4", features = ["getrandom"]}
+tested-trait = "0.1.0"
+elliptic-curve = {version = "0.13.8", features = ["arithmetic", "hash2curve", "serde"]}
+digest = "0.10.7"
+sha2 = "0.10.8"
+crypto-bigint = "0.5.5"
+ciphersuite = "0.4.1"
+k256 = "0.13.3"
+p256 = "0.13.2"
+primeorder = "0.13.6"
+generic-array = "1.0.0"
+serde = "1.0.192"

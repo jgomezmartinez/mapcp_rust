@@ -1,0 +1,13 @@
+[package]
+name = "selling_signature_elgamal_NistP256"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+schemas = {path = "../schemas"}
+k256 = "0.13.3"
+p256 = "0.13.2"
+bp256 = "0.6.1"
+elliptic-curve = {version = "0.13.8", features = ["arithmetic", "hash2curve", "serde"]}
