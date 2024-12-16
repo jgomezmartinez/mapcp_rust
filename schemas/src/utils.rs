@@ -47,6 +47,21 @@ pub fn scalar_to_byte_vector<C: CurveArithmetic>(scalar: &C::Scalar) -> Vec<u8> 
     v
 }
 
+pub fn ith_bit(bytes: &Vec<u8>, i: usize) -> u8 {
+    let n_bits = 8 * bytes.len();
+    let index_be = n_bits - i - 1;
+    let byte_index = index_be / 8;
+    let bit_index = 7 - (index_be % 8);
+    let byte = bytes[byte_index];
+    let mask = 1 << bit_index;
+
+    if (mask & byte) > 0 {
+        1
+    } else {
+        0
+    }
+}
+
 pub fn bit_at(bytes: &Vec<u8>, i: usize) -> u8 {
     let mask = 1 << (i % 8);
     if (mask & bytes[i / 8]) > 0 {
@@ -55,4 +70,15 @@ pub fn bit_at(bytes: &Vec<u8>, i: usize) -> u8 {
         0
     }
     //(bytes[i / 8] >> (i % 8)) & 1
+}
+
+pub fn set_bit_at(byte: &mut u8, i: usize, val: bool) {
+    let bit_index = i % 8;
+    if val {
+        let mask = 1 << bit_index;
+        *byte |= mask;
+    } else {
+        let mask = !(1 << bit_index);
+        *byte &= mask;
+    }
 }

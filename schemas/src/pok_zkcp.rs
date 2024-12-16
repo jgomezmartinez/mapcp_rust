@@ -29,7 +29,7 @@ where
     pub sk: C::Scalar,
     pub w: C::Scalar,
     pub elgamal_randomness: Vec<C::Scalar>,
-    pub sig_bytes: Vec<u8>
+    pub sig_bytes_le: Vec<u8> // bytes of the signature in little endian vector
 }
 
 pub struct Statement<C, H>
@@ -109,7 +109,7 @@ where
         let mut total_a = C::ProjectivePoint::identity();
         let mut total_b = C::ProjectivePoint::identity();
         for i in 0..x.elgamal_a.len() {
-            let bit = if bit_at(&w.sig_bytes, i) == 0 {
+            let bit = if bit_at(&w.sig_bytes_le, i) == 0 {
                 C::Scalar::ZERO
             } else {
                 C::Scalar::ONE
@@ -285,12 +285,10 @@ where
     }
 
     fn prove(crs: &Self::CRS, x: &Self::Statement, w: &Self::Witness) -> Self::Proof {
-        let sig_bytes = &w.sig_bytes;
+        let sig_bytes_le = &w.sig_bytes_le;
         let g = C::ProjectivePoint::generator();
         let ek = x.x;
-        let ekg = x.x - g;
-        let ct_b = &x.elgamal_b;
-        let n_bits = sig_bytes.len()*8;
+        let n_bits = sig_bytes_le.len()*8;
 
         let rel_as_randomness = NonZeroScalar::<C>::random(&mut OsRng);
         let rel_as_commitment = g*(*rel_as_randomness);
@@ -321,7 +319,7 @@ where
             random_responses.push(*random_response);
 
             commitments_a.push(g * (*u));
-            if bit_at(&sig_bytes, i) == 0 { // i-th bit of the signature is 0
+            if bit_at(&sig_bytes_le, i) == 0 { // i-th bit of the signature is 0
                 commitments_b1.push(ek * (*u));
                 //commitments_b2.push(x.elgamal_b[i] * (*random_response) - g + ct_b[i] * (- (*cheat)));
                 commitments_b2.push(ek * *random_response + (x.elgamal_b[i] - g)*(- *cheat));
@@ -359,7 +357,7 @@ where
         let mut challenges_c2 =Vec::<C::Scalar>::with_capacity(n_bits);
         for i in 0..n_bits {
             responses_a.push(randomness[i] + c * w.elgamal_randomness[i]);
-            if bit_at(&sig_bytes, i) == 0 { // i-th bit of the signature is 0
+            if bit_at(&sig_bytes_le, i) == 0 { // i-th bit of the signature is 0
                 let c2 = cheats[i];
                 let c1 = c - c2;
                 responses_b1.push(randomness[i] + c1*w.elgamal_randomness[i]);
@@ -397,7 +395,6 @@ where
     fn verify(crs: &Self::CRS, x: &Self::Statement, p: &Self::Proof) -> bool {
         let g = C::ProjectivePoint::generator();
         let ek = x.x;
-        let ekg = x.x - g;
 
         let rv = x.gs + ((-x.vk) * x.sig_hash);
         let proj_pk = proj::<C>(&x.vk);
@@ -421,7 +418,8 @@ where
             if !( c == c1 + c2
                 && g * p.responses.a_bits[i] == p.commitments.a_bits[i] + x.elgamal_a[i]*c
                 && ek * p.responses.b1_bits[i] == p.commitments.b1_bits[i] + x.elgamal_b[i]*c1
-                && ek * p.responses.b2_bits[i] == p.commitments.b2_bits[i] + (x.elgamal_b[i]-g)*c2) {
+                && ek * p.responses.b2_bits[i] == p.commitments.b2_bits[i] + (x.elgamal_b[i]-g)*c2)
+                {
                 return false;
             }
             A = A + x.elgamal_a[i]*exp_acc;
@@ -429,11 +427,10 @@ where
             exp_acc = exp_acc.double();
         }
 
-
         ev == x.sig_hash 
             && g * p.responses.sig_keys == p.commitments.sig_keys + x.vk*c
             && g * p.responses.rel_as == p.commitments.rel_as + x.x*c
             && g * p.responses.total == p.commitments.a_total + A*c
-//            && g * p.responses.total == p.commitments.b_total + ek * c - x.gs
+            && ek * p.responses.total == p.commitments.b_total + (B-x.gs) * c
     }
 }

@@ -13,7 +13,7 @@ use schemas::schnorr_adaptor_signatures::SchnorrAdaptorSignature;
 use schemas::schnorr_signatures::SchnorrSignature;
 use schemas::schnorr_signatures::SchnorrSignatureScheme;
 use schemas::signature_scheme::SignatureScheme;
-use schemas::utils::{bit_at, point_to_byte_vector, proj, scalar_to_byte_vector};
+use schemas::utils::{bit_at, point_to_byte_vector, proj, scalar_to_byte_vector, set_bit_at};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
@@ -60,7 +60,8 @@ fn selling_signature(time_file: &mut BufWriter<File>) {
 
     let (w, x) = DLog::gen(&g);
     let signature = Sig::sign(&sk_notary, msg);
-    let sig_bytes = scalar_to_byte_vector::<C>(&signature.sig);
+    let big_endian_sig_bytes = scalar_to_byte_vector::<C>(&signature.sig);
+    let sig_bytes: Vec<u8> = big_endian_sig_bytes.into_iter().rev().collect();
     let sig_n_bytes = sig_bytes.len();
     let sig_n_bits = sig_n_bytes * 8;
     let mut elgamal_a = Vec::<Point>::new();
@@ -76,12 +77,13 @@ fn selling_signature(time_file: &mut BufWriter<File>) {
         elgamal_b.push(cti.1);
         enc_randomness.push(ri);
     }
+
     let witness = Wit {
         sig: signature.sig,
         sk: *sk_notary,
         w: *w,
         elgamal_randomness: enc_randomness,
-        sig_bytes: sig_bytes.clone(),
+        sig_bytes_le: sig_bytes.clone(),
     };
     let statement = St::new(
         pk_notary,
@@ -169,10 +171,9 @@ fn selling_signature(time_file: &mut BufWriter<File>) {
             extracted_bytes.push(byte);
             byte = 0;
         }
-        byte = byte >> 1;
         let decrypted_point = PKE::dec(&extracted_w, &(elgamal_a[i], elgamal_b[i]));
         if decrypted_point == Point::GENERATOR {
-            byte += 128;
+            set_bit_at(&mut byte, i, true);
         }
         first_iteration = false;
     }
